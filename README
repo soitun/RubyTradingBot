@@ -1,1 +1,2 @@
 A ruby Bitcoin Trading Bot.
+It currently has interfaces for Mt. Gox and CampBX.
