@@ -1,4 +1,29 @@
-require_relative 'mt_gox_client.rb'
-require_relative 'camp_bx_client.rb'
+require 'yaml/dbm'
+require_relative 'mt_gox_client'
+require_relative 'camp_bx_client'
 
-puts "Hello World"
+class Trader
+
+  def initialize
+    @client = nil
+  end
+
+  def restore_backup
+
+  end
+
+end
+
+if __FILE__ == $0
+
+  if !File.exist? 'config.yaml'
+    puts "Config File Missing\nPlease make sure the config file is in the proper directory"
+    abort('No config file found')
+  end
+
+  trader = Trader.new()
+  trader.restore_backup
+
+end
+
+
