@@ -1,6 +1,6 @@
-require 'yaml/dbm'
-require_relative 'mt_gox_client'
 require_relative 'camp_bx_client'
+require_relative 'mt_gox_client'
+require 'psych'
 
 class Trader
 
@@ -10,7 +10,7 @@ class Trader
   end
 
   def read_settings
-    settings = YAML.load_file('config.yaml')
+    settings = Psych.load_file('config.yaml')
     case settings['client']
       when 'mtgox' then
         @client = MtGoxClient.new(settings['key'],settings['secret'])
@@ -21,6 +21,16 @@ class Trader
     end
 
     puts 'Read settings.'
+
+  end
+
+  def start_up
+    #TODO: Check for backup and if there, restore state
+    @client.start_up
+    @client.get_orders
+  end
+
+  def run
 
   end
 
@@ -57,6 +67,13 @@ if __FILE__ == $0
   end
 
   trader = Trader.new()
+  trader.start_up()
+  #trade_thread = Thread.new {
+  #  trader.run()
+  #  sleep 10
+  #}
+
+  #trade_thread.join
 
 end
 

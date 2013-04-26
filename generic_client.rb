@@ -3,15 +3,21 @@ require 'uri'
 
 class GenericClient
 
+  attr_reader :wallets
+
+  def initialize
+    @wallets = Hash.new()
+    @wallets['usd'] = 0
+    @wallets['bitcoin'] = 0
+  end
+
   def send_data(uri, headers, data)
 
     res = Net::HTTP.start(uri.hostname, uri.port) do |http|
 
       if data == nil
-        puts 'GET'
         req = Net::HTTP::Get.new(uri.request_uri)
       else
-        puts 'POST'
         req = Net::HTTP::Post.new(uri.request_uri)
         req.set_form_data(data)
       end
