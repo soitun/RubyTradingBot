@@ -9,7 +9,7 @@ class MtGoxClient < GenericClient
     super()
     @key = key
     @secret = secret
-    @base_url = 'http://data.mtgox.com/api/1/'
+    @base_url = 'http://data.mtgox.com/api/2/'
   end
 
   def start_up
@@ -17,35 +17,55 @@ class MtGoxClient < GenericClient
   end
 
   def get_prices
-    uri = URI(@base_url+'BTCUSD/ticker')
+    path = 'BTCUSD/money/ticker'
+    uri = URI(@base_url+path)
     header = Hash.new()
     ticker =  JSON.parse(send_data(uri,header,nil))
-    puts ticker['return']
+    if ticker['result'] != 'success'
+      puts 'Could not get ticker data'
+      return nil
+    end
+    @ticker['bid'] = ticker['data']['buy']['value']
+    @ticker['ask'] = ticker['data']['sell']['value']
+    puts @ticker
   end
 
   def update_wallet_info
-    uri = URI(@base_url+'generic/private/info')
+    path = 'money/info'
+    uri = URI(@base_url+path)
     data = Hash.new()
     data['nonce'] = Time.now.to_f*1000
     data_string = build_query_string(data)
-    sign = do_encrypt(data_string)
+    sign = do_encrypt(path, data_string)
     sign.gsub!("\n",'')
     header = Hash.new()
-    header['User-Agent'] = 'Ruby Bot'
     header['Rest-Key'] = @key
     header['Rest-Sign'] = sign
     wallet = JSON.parse(send_data(uri,header,data))
-    @wallets['usd'] = wallet['return']['Wallets']['USD']['Balance']['value']
-    @wallets['bitcoin'] = wallet['return']['Wallets']['BTC']['Balance']['value']
+    if wallet['result'] != 'success'
+      puts 'Could not get wallet data'
+      return nil
+    end
+    @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value']
+    @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value']
     puts @wallets
   end
 
-  def get_orders
+  def get_trades
+    path = 'BTCUSD/money/trades/fetch'
+    uri = URI(@base_url+path)
+    header = Hash.new()
+    header['Rest-Key'] = @key
+    trades = JSON.parse(send_data(uri,header,nil))
+    if trades['result'] != 'success'
+      puts 'Could not get trade info data'
+      return nil
+    end
 
   end
 
-  def do_encrypt(data_string)
-    temp =  OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new('sha512'),  Base64.decode64(@secret) , data_string)
+  def do_encrypt(path, data_string)
+    temp =  OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new('sha512'),  Base64.decode64(@secret) , path+0.chr+data_string)
     return Base64.encode64(temp)
   end
 

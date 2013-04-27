@@ -27,11 +27,11 @@ class Trader
   def start_up
     #TODO: Check for backup and if there, restore state
     @client.start_up
-    @client.get_orders
+    #@client.get_trades
   end
 
   def run
-
+    @client.get_prices()
   end
 
 end
@@ -68,12 +68,22 @@ if __FILE__ == $0
 
   trader = Trader.new()
   trader.start_up()
-  #trade_thread = Thread.new {
-  #  trader.run()
-  #  sleep 10
-  #}
-
-  #trade_thread.join
+  thread_exit = false
+  trade_thread = Thread.new {
+    while true do
+      if thread_exit == true
+        Thread.current.exit()
+      end
+      trader.run()
+      sleep 10
+    end
+  }
+  input = ''
+  while input != 'exit'
+    input = gets().chomp()
+  end
+  thread_exit = true
+  trade_thread.join
 
 end
 

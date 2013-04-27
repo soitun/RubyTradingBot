@@ -9,6 +9,10 @@ class GenericClient
     @wallets = Hash.new()
     @wallets['usd'] = 0
     @wallets['bitcoin'] = 0
+    @ticker = Hash.new()
+
+    @ticker['bid'] = 0
+    @ticker['ask'] = 0
   end
 
   def send_data(uri, headers, data)
@@ -22,6 +26,7 @@ class GenericClient
         req.set_form_data(data)
       end
 
+      req['User-Agent'] = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:20.0) Gecko/20100101 Firefox/20.0'
       headers.each do |key, value|
         req[key] = value
       end
