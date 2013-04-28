@@ -14,10 +14,11 @@ class MtGoxClient < GenericClient
 
   def start_up
     update_wallet_info()
+    get_prices()
   end
 
   def get_prices
-    path = 'BTCUSD/money/ticker'
+    path = 'BTCUSD/money/ticker_fast'
     uri = URI(@base_url+path)
     header = Hash.new()
     ticker =  JSON.parse(send_data(uri,header,nil))
@@ -27,7 +28,6 @@ class MtGoxClient < GenericClient
     end
     @ticker['bid'] = ticker['data']['buy']['value']
     @ticker['ask'] = ticker['data']['sell']['value']
-    puts @ticker
   end
 
   def update_wallet_info
@@ -48,20 +48,26 @@ class MtGoxClient < GenericClient
     end
     @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value']
     @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value']
-    puts @wallets
+    @wallets['fee'] = wallet['data']['Trade_Fee']
   end
 
-  def get_trades
-    path = 'BTCUSD/money/trades/fetch'
+  def get_orders
+    path = 'BTCUSD/money/orders'
     uri = URI(@base_url+path)
+    data = Hash.new()
+    data['nonce'] = Time.now.to_f*1000
+    data_string = build_query_string(data)
+    sign = do_encrypt(path, data_string)
+    sign.gsub!("\n",'')
     header = Hash.new()
     header['Rest-Key'] = @key
-    trades = JSON.parse(send_data(uri,header,nil))
+    header['Rest-Sign'] = sign
+    trades = JSON.parse(send_data(uri,header,data))
     if trades['result'] != 'success'
       puts 'Could not get trade info data'
       return nil
     end
-
+    @orders = trades['data']
   end
 
   def do_encrypt(path, data_string)

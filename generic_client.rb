@@ -3,16 +3,19 @@ require 'uri'
 
 class GenericClient
 
-  attr_reader :wallets
+  attr_reader :wallets,:ticker,:trades
 
   def initialize
     @wallets = Hash.new()
     @wallets['usd'] = 0
     @wallets['bitcoin'] = 0
-    @ticker = Hash.new()
+    @wallets['fee'] = 0.55
 
+    @ticker = Hash.new()
     @ticker['bid'] = 0
     @ticker['ask'] = 0
+
+    @orders = nil
   end
 
   def send_data(uri, headers, data)
