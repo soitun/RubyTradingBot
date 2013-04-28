@@ -23,59 +23,64 @@ class Trader
         abort('Bad settings file. Please delete and do the setup')
     end
 
-    puts 'Read settings.'
+    puts 'Settings loaded.'
+  end
 
+  def save_state
+    data = Hash.new()
+
+    File.open('backup.yaml','w') do |file|
+      file.puts data.to_yaml
+    end
+  end
+
+  def load_state
+    if !File.exist? 'backup.yaml'
+      puts 'No backup to load.'
+    end
   end
 
   def start_up
     #TODO: Check for backup and if there, restore state
+    load_state
     @client.start_up
-    @client.get_orders
+    #@client.get_orders
 
     puts 'Wallet: ' + @client.wallets.to_s
     puts 'Ticker: ' + @client.ticker.to_s
+    puts 'Total Value: $' + '%.8f' % total_value.to_s
   end
 
   def run
     @client.get_prices()
-    @client.get_orders()
-    update_averages()
 
     rand = rand(10) + 1
     #Begin Drafting a trade
+    btcAvailable = @client.wallets['bitcoin']
     btcAvailable = btcAvailable/rand
-    price = calc_price('ask')
 
-    best_price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+    price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+
+    if(price<bought_price)
+      #TODO: do trade here
+    end
 
     puts best_price
 
   end
 
-  def update_averages
-    total_bid = 0
-    total_ask = 0
-    num_ask = 0
-    num_bid = 0
-
-    @client.trades.each do |trade|
-      if trade['trade_type'] == 'bid'
-        total_bid += trade['price'].to_f
-        num_bid += 1
-      else
-        total_ask += trade['price'].to_f
-        num_ask += 1
-      end
+  def convert_int(type, quantity)
+    if(type=='price')
+      return quantity.to_f/1.0e5
+    else
+      return quantity.to_f/1.0e8
     end
-
-    @avgs['bid'] = total_bid/num_bid
-    @avgs['ask'] = total_ask/num_ask
-
   end
 
-  def calc_price(type)
-    avg = @avgs[(type=='bid')?'ask':'bid']
-    return avg
+  def total_value
+    float_amt = convert_int('amount',@client.wallets['bitcoin'])
+    float_price = convert_int('price',@client.ticker['ask'])
+    return convert_int('price',@client.wallets['usd'])+(float_amt*float_price)
   end
 
 end

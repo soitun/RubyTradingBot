@@ -26,8 +26,8 @@ class MtGoxClient < GenericClient
       puts 'Could not get ticker data'
       return nil
     end
-    @ticker['bid'] = ticker['data']['buy']['value']
-    @ticker['ask'] = ticker['data']['sell']['value']
+    @ticker['bid'] = ticker['data']['buy']['value_int'].to_i
+    @ticker['ask'] = ticker['data']['sell']['value_int'].to_i
   end
 
   def update_wallet_info
@@ -46,9 +46,9 @@ class MtGoxClient < GenericClient
       puts 'Could not get wallet data'
       return nil
     end
-    @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value']
-    @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value']
-    @wallets['fee'] = wallet['data']['Trade_Fee']
+    @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value_int'].to_i
+    @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value_int'].to_i
+    @wallets['fee'] = wallet['data']['Trade_Fee'].to_f
   end
 
   def get_orders
@@ -69,6 +69,25 @@ class MtGoxClient < GenericClient
     end
     @orders = trades['data']
   end
+
+  def do_trade(type, amount, price)
+    path = 'BTCUSD/money/order/add'
+    uri = URI(@base_url+path)
+    data = Hash.new()
+    data['nonce'] = Time.now.to_f*1000
+    data['type'] = type
+    data['amount_int'] = convert_int('amount',amount)
+    data['price_int'] =  convert_int('price',price)
+    data_string = build_query_string(data)
+    sign = do_encrypt(path, data_string)
+    sign.gsub!("\n",'')
+    header = Hash.new()
+    header['Rest-Key'] = @key
+    header['Rest-Sign'] = sign
+    oid = JSON.parse(send_data(uri,header,data))
+  end
+
+
 
   def do_encrypt(path, data_string)
     temp =  OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new('sha512'),  Base64.decode64(@secret) , path+0.chr+data_string)

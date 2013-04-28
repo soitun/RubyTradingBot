@@ -3,7 +3,7 @@ require 'uri'
 
 class GenericClient
 
-  attr_reader :wallets,:ticker,:trades
+  attr_reader :wallets,:ticker,:orders
 
   def initialize
     @wallets = Hash.new()
