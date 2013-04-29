@@ -39,23 +39,28 @@ class Trader
   def load_state
     if !File.exist? 'backup.yaml'
       puts 'No backup to load.'
+      return false
     end
 
     data = Psych.load_file('backup.yaml')
 
-    @last_price['ask'] = data['last_prices']['ask']
-    @last_price['bid'] = data['last_prices']['bid']
+    @last_price['buy'] = data['last_prices']['buy'].to_i
+    @last_price['sell'] = data['last_prices']['sell'].to_i
 
     @total_wealth = data['total_wealth']
+
+    return true
   end
 
   def start_up
     #TODO: Check for backup and if there, restore state
-    load_state
     @client.start_up
-    @last_price['buy'] = @client.ticker['bid']
-    @last_price['sell'] = @client.ticker['ask']
 
+    if !load_state()
+      puts 'using defaults'
+      @last_price['buy'] = @client.ticker['bid']
+      @last_price['sell'] = @client.ticker['ask']
+    end
     save_state()
 
     puts 'Wallet: ' + @client.wallets.to_s
@@ -65,22 +70,41 @@ class Trader
 
   def run
     min_btc = 1000000
+    min_usd =
     @client.get_prices()
+    @client.update_wallet_info()
 
     rand = rand(10) + 1
-    #Begin Drafting a trade
+    #Begin Drafting a Sell
     btcAvailable = @client.wallets['bitcoin']
     btcAvailable = btcAvailable/rand
 
     price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
 
-    puts convert_int('price',price)
-    puts '%.8f' % convert_int('amount',btcAvailable)
     #btcAvailable > min_btc &&
-    if(price > (@last_price['buy']*1.15))
+    puts @client.ticker
+    puts 'Price = '+convert_int('price',price).to_s+'. Buy price(plus 1%) = '+(convert_int('price',@last_price['buy'])*1.01).to_s
+    if(price > (@last_price['buy']*1.01))
       #@client.do_trade('ask',btcAvailable,price)
-      puts 'Executing trade of'+'%.8f' % convert_int('amount',btcAvailable)+'for $'+convert_int('price',price).to_s
-      @last_price['ask'] = price
+      puts 'Executing sell of '+'%.8f' % convert_int('amount',btcAvailable)+'for $'+convert_int('price',price).to_s
+      @last_price['sell'] = price
+      save_state()
+    end
+
+
+    rand = rand(10) + 1
+    #Begin Drafting a Buy
+    usdAvailable = @client.wallets['usd']
+    usdAvailable = usdAvailable/rand
+
+    price = (@client.ticker['ask'] < @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+
+    #usdAvailable > min_usd &&
+    puts 'Price = '+convert_int('price',price).to_s+'. Sell price(minus 1%) = '+(convert_int('price',@last_price['sell'])-(0.01*convert_int('price',@last_price['sell']))).to_s
+    if(price < (@last_price['sell']-(0.01*@last_price['sell'])))
+      #@client.do_trade('ask',usdAvailable,price)
+      puts 'Executing buy of '+'%.8f' % convert_int('amount',usdAvailable)+'for $'+convert_int('price',price).to_s
+      @last_price['buy'] = price
       save_state()
     end
 

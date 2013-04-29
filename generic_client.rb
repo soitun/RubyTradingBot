@@ -48,11 +48,3 @@ class GenericClient
   end
 
 end
-
-if __FILE__ == $0
-  client = GenericClient.new()
-  uri = URI('http://data.mtgox.com/api/1/BTCUSD/ticker')
-  header = Hash.new()
-  data = client.send_data(uri,header,nil)
-  puts data
-end
