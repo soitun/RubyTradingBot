@@ -26,8 +26,8 @@ class MtGoxClient < GenericClient
       puts 'Could not get ticker data'
       return nil
     end
-    @ticker['bid'] = ticker['data']['buy']['value_int'].to_i
-    @ticker['ask'] = ticker['data']['sell']['value_int'].to_i
+    @ticker['bid'] = ticker['data']['buy']['value'].to_f
+    @ticker['ask'] = ticker['data']['sell']['value'].to_f
   end
 
   def update_wallet_info
@@ -46,8 +46,8 @@ class MtGoxClient < GenericClient
       puts 'Could not get wallet data'
       return nil
     end
-    @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value_int'].to_i
-    @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value_int'].to_i
+    @wallets['usd'] = wallet['data']['Wallets']['USD']['Balance']['value'].to_f
+    @wallets['bitcoin'] = wallet['data']['Wallets']['BTC']['Balance']['value'].to_f
     @wallets['fee'] = wallet['data']['Trade_Fee'].to_f
   end
 
@@ -76,8 +76,8 @@ class MtGoxClient < GenericClient
     data = Hash.new()
     data['nonce'] = Time.now.to_f*1000
     data['type'] = type
-    data['amount_int'] = convert_int('amount',amount)
-    data['price_int'] =  convert_int('price',price)
+    data['amount_int'] = (amount*1.0e8).to_i
+    data['price_int'] =  (price*1.0e5).to_i
     data_string = build_query_string(data)
     sign = do_encrypt(path, data_string)
     sign.gsub!("\n",'')

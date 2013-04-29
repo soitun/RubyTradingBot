@@ -10,6 +10,7 @@ class Trader
     @last_price['buy'] = 0
     @last_price['sell'] = 0
     @total_wealth = 0
+    @loop_count = 0
     read_settings()
   end
 
@@ -44,8 +45,8 @@ class Trader
 
     data = Psych.load_file('backup.yaml')
 
-    @last_price['buy'] = data['last_prices']['buy'].to_i
-    @last_price['sell'] = data['last_prices']['sell'].to_i
+    @last_price['buy'] = data['last_prices']['buy'].to_f
+    @last_price['sell'] = data['last_prices']['sell'].to_f
 
     @total_wealth = data['total_wealth']
 
@@ -62,7 +63,6 @@ class Trader
       @last_price['sell'] = @client.ticker['ask']
     end
     save_state()
-
     puts 'Wallet: ' + @client.wallets.to_s
     puts 'Ticker: ' + @client.ticker.to_s
     puts 'Total Value: $' + '%.8f' % total_value.to_s
@@ -72,7 +72,7 @@ class Trader
     min_btc = 1000000
     min_usd =
     @client.get_prices()
-    @client.update_wallet_info()
+    #@client.update_wallet_info()
 
     rand = rand(10) + 1
     #Begin Drafting a Sell
@@ -108,6 +108,12 @@ class Trader
       save_state()
     end
 
+    if @loop_count == 120
+      @loop_count = 0
+      @last_price['buy'] = @client.ticker['bid']
+      @last_price['sell'] = @client.ticker['ask']
+      puts 'Not enough trading. Resetting prices'
+    end
 
 
   end
@@ -168,7 +174,7 @@ if __FILE__ == $0
         Thread.current.exit()
       end
       trader.run()
-      sleep 15
+      sleep 10
     end
   }
   input = ''
