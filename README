@@ -1,2 +1,8 @@
 A ruby Bitcoin Trading Bot.
 It currently has interfaces for Mt. Gox and CampBX.
+
+Currently only the Mt. Gox client is implemented and uses he v2 API.
+CampBX will come after I have made sure the bot makes steady gains.
+
+There is also included a fake testing bot for the Mt. Gox client. 
+It performs fake trades with variable sized wallets to test the bots profitability.
