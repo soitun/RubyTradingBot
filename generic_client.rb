@@ -21,6 +21,7 @@ class GenericClient
   def send_data(uri, headers, data)
 
     res = Net::HTTP.start(uri.hostname, uri.port) do |http|
+      http.read_timeout = 240
 
       if data == nil
         req = Net::HTTP::Get.new(uri.request_uri)
