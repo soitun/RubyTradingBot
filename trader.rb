@@ -54,7 +54,6 @@ class Trader
   end
 
   def start_up
-    #TODO: Check for backup and if there, restore state
     @client.start_up
 
     if !load_state()

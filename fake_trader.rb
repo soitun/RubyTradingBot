@@ -5,11 +5,11 @@ require 'psych'
 
 class FakeTrader < Trader
 
-  def initialize
+  def initialize(usd, bitcoin)
     super()
     @wallets = Hash.new()
-    @wallets['usd'] = 40
-    @wallets['bitcoin'] = 0.30
+    @wallets['usd'] = usd
+    @wallets['bitcoin'] = bitcoin
     puts @wallets
   end
 
@@ -105,7 +105,11 @@ class FakeTrader < Trader
 end
 
 if __FILE__ == $0
-  trader = FakeTrader.new()
+  puts 'How much USD in account: '
+  usd = gets.chomp
+  puts 'How many bitcoins in account: '
+  btc = gets.chomp
+  trader = FakeTrader.new(usd.to_f, btc.to_f)
   trader.start_up()
   thread_exit = false
   trade_thread = Thread.new {
