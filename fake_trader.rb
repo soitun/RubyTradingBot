@@ -8,8 +8,8 @@ class FakeTrader < Trader
   def initialize
     super()
     @wallets = Hash.new()
-    @wallets['usd'] = 20
-    @wallets['bitcoin'] = 0.15
+    @wallets['usd'] = 40
+    @wallets['bitcoin'] = 0.30
     puts @wallets
   end
 
@@ -22,10 +22,13 @@ class FakeTrader < Trader
       @last_price['sell'] = @client.ticker['ask']
     end
     save_state()
-    @last_total = @total_wealth
+    @last_total = @wallets['usd']+(@wallets['bitcoin']*@client.ticker['ask'])
+    puts 'Starting wealth is: $'+'%.4f'%@last_total
+    puts "\n"
   end
 
   def run
+    puts Time.now().to_s
     min_btc = 0.02
     min_usd = 3
     @client.get_prices()
@@ -36,9 +39,9 @@ class FakeTrader < Trader
     btcAvailable = btcAvailable/rand
 
     price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
-    puts 'Price = '+price.to_s+'. Buy price(plus 0.7%) = '+(@last_price['buy']*1.007).to_s
+    puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
 
-    if(btcAvailable > min_btc && price > (@last_price['buy']*1.007))
+    if(btcAvailable > min_btc && price > (@last_price['buy']*1.01))
       do_trade('sell',btcAvailable,price)
       puts 'Executing sell of '+'%.8f' % btcAvailable+' for $'+price.to_s+'. Total of '+'%.2f'%(price*btcAvailable)
       @last_price['sell'] = price
@@ -55,8 +58,8 @@ class FakeTrader < Trader
     price = (@client.ticker['ask'] < @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
 
     #usdAvailable > min_usd &&
-    puts 'Price = '+price.to_s+'. Sell price(minus 0.7%) = '+(@last_price['sell']-(0.007*@last_price['sell'])).to_s
-    if(usdAvailable > min_usd && price < (@last_price['sell']-(0.007*@last_price['sell'])))
+    puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
+    if(usdAvailable > min_usd && price < (@last_price['sell']-(0.01*@last_price['sell'])))
       amount = usdAvailable/price
       do_trade('buy',amount,price)
       puts 'Executing buy of '+'%.8f'%amount+' for $'+'%.2f'%price+'. Total of '+'%.2f'%(price*amount)
@@ -65,7 +68,7 @@ class FakeTrader < Trader
       save_state()
     end
 
-    if @loop_count == 240
+    if @loop_count == 960
       @loop_count = 0
       @last_price['buy'] = @client.ticker['bid']
       @last_price['sell'] = @client.ticker['ask']
@@ -73,7 +76,7 @@ class FakeTrader < Trader
     end
     @loop_count += 1
     print_gains()
-    puts @loop_count
+    puts @loop_count.to_s+"\n\n"
     STDOUT.flush
   end
 
