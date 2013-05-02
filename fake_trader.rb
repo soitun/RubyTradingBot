@@ -15,20 +15,33 @@ class FakeTrader < Trader
     @ticker = Hash.new()
   end
 
-  def start_up
+  def start_up(prices=nil)
+    if prices == nil
+      @client.get_prices()
+      prices = @client.ticker
+    end
     if !load_state()
+
       puts 'using defaults'
       @last_price['buy'] = prices['bid']
       @last_price['sell'] = prices['ask']
     end
-    save_state()
+    save_state(prices)
     @last_total = @wallets['usd']+(@wallets['bitcoin']*prices['ask'])
     puts 'Starting wealth is: $'+'%.4f'%@last_total
     puts "\n"
   end
 
+  def save_state(prices)
+    data = Hash.new()
+    data['last_prices'] = @last_price
+    data['total_wealth'] = total_value(prices)
+    File.open('backup.yaml','w') do |file|
+      file.puts data.to_yaml
+    end
+  end
+
   def run(prices=nil)
-    @client.get_prices()
     if prices == nil
       @client.get_prices()
       prices = @client.ticker
@@ -51,7 +64,7 @@ class FakeTrader < Trader
       puts 'Executing sell of '+'%.8f' % btcAvailable+' for $'+price.to_s+'. Total of '+'%.2f'%(price*btcAvailable)
       @last_price['sell'] = price
       @loop_count = 0
-      save_state()
+      save_state(prices)
     end
 
 
@@ -80,17 +93,17 @@ class FakeTrader < Trader
       puts 'Not enough trading. Resetting prices'
     end
     @loop_count += 1
-    print_gains()
+    print_gains(prices)
     puts @loop_count.to_s+"\n\n"
     STDOUT.flush
   end
 
-  def print_gains
+  def print_gains(prices)
     puts 'Current wallet has: '+(@wallets['usd']).to_s+' USD and '+'%.8f'%(@wallets['bitcoin'])+' BTC'
-    puts 'That is an increase in total wealth of '+'%.5f' %(total_value()-@last_total).to_s
+    puts 'That is an increase in total wealth of '+'%.5f' %(total_value(prices)-@last_total).to_s
   end
 
-  def total_value
+  def total_value(prices)
     float_amt = @wallets['bitcoin']
     float_price = prices['ask']
     @total_wealth = @wallets['usd']+(float_amt*float_price)
@@ -110,6 +123,7 @@ class FakeTrader < Trader
   end
 
   def loop
+    firstrun = true
     if File.exist? 'prices.txt'
       file = File.new('prices.txt', 'r')
       while (line = file.gets)
@@ -117,6 +131,10 @@ class FakeTrader < Trader
         json = JSON.parse(line)
         prices['bid'] = json['buy']['value'].to_f
         prices['ask'] = json['sell']['value'].to_f
+        if firstrun
+          firstrun = false
+          start_up(prices)
+        end
         run(prices)
       end
       file.close
@@ -137,7 +155,6 @@ if __FILE__ == $0
 
   if choice.to_i == 1
     trader = FakeTrader.new(usd.to_f, btc.to_f)
-    trader.start_up()
     trader.loop
     abort('Ran out of logs ending')
   end
