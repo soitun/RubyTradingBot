@@ -2,6 +2,7 @@ require_relative 'camp_bx_client'
 require_relative 'mt_gox_client'
 require_relative 'trader'
 require 'psych'
+require 'json'
 
 class FakeTrader < Trader
 
@@ -11,23 +12,27 @@ class FakeTrader < Trader
     @wallets['usd'] = usd
     @wallets['bitcoin'] = bitcoin
     puts @wallets
+    @ticker = Hash.new()
   end
 
   def start_up
-    @client.get_prices()
-    puts @client.ticker
     if !load_state()
       puts 'using defaults'
-      @last_price['buy'] = @client.ticker['bid']
-      @last_price['sell'] = @client.ticker['ask']
+      @last_price['buy'] = prices['bid']
+      @last_price['sell'] = prices['ask']
     end
     save_state()
-    @last_total = @wallets['usd']+(@wallets['bitcoin']*@client.ticker['ask'])
+    @last_total = @wallets['usd']+(@wallets['bitcoin']*prices['ask'])
     puts 'Starting wealth is: $'+'%.4f'%@last_total
     puts "\n"
   end
 
-  def run
+  def run(prices=nil)
+    @client.get_prices()
+    if prices == nil
+      @client.get_prices()
+      prices = @client.ticker
+    end
     puts Time.now().to_s
     min_btc = 0.01
     min_usd = 2
@@ -38,7 +43,7 @@ class FakeTrader < Trader
     btcAvailable = @wallets['bitcoin']
     btcAvailable = (btcAvailable/rand).round(8)
 
-    price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+    price = (prices['ask'] > prices['bid'])?prices['ask']:prices['bid']
     puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
 
     if(btcAvailable > min_btc && price > (@last_price['buy']*1.01))
@@ -55,7 +60,7 @@ class FakeTrader < Trader
     usdAvailable = @wallets['usd']
     usdAvailable = (usdAvailable/rand).round(5)
 
-    price = (@client.ticker['ask'] < @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+    price = (prices['ask'] < prices['bid'])?prices['ask']:prices['bid']
 
     #usdAvailable > min_usd &&
     puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
@@ -70,8 +75,8 @@ class FakeTrader < Trader
 
     if @loop_count == 960
       @loop_count = 0
-      @last_price['buy'] = @client.ticker['bid']
-      @last_price['sell'] = @client.ticker['ask']
+      @last_price['buy'] = prices['bid']
+      @last_price['sell'] = prices['ask']
       puts 'Not enough trading. Resetting prices'
     end
     @loop_count += 1
@@ -87,7 +92,7 @@ class FakeTrader < Trader
 
   def total_value
     float_amt = @wallets['bitcoin']
-    float_price = @client.ticker['ask']
+    float_price = prices['ask']
     @total_wealth = @wallets['usd']+(float_amt*float_price)
     return @total_wealth
   end
@@ -104,6 +109,22 @@ class FakeTrader < Trader
     @wallets['usd'].round(5)
   end
 
+  def loop
+    if File.exist? 'prices.txt'
+      file = File.new('prices.txt', 'r')
+      while (line = file.gets)
+        prices = Hash.new()
+        json = JSON.parse(line)
+        prices['bid'] = json['buy']['value'].to_f
+        prices['ask'] = json['sell']['value'].to_f
+        run(prices)
+      end
+      file.close
+    else
+      puts 'No log data. Exiting.'
+    end
+  end
+
 end
 
 if __FILE__ == $0
@@ -111,6 +132,16 @@ if __FILE__ == $0
   usd = gets.chomp
   puts 'How many bitcoins in account: '
   btc = gets.chomp
+  puts '1 - Fake Data. 2 - Live'
+  choice = gets.chomp
+
+  if choice.to_i == 1
+    trader = FakeTrader.new(usd.to_f, btc.to_f)
+    trader.start_up()
+    trader.loop
+    abort('Ran out of logs ending')
+  end
+
   trader = FakeTrader.new(usd.to_f, btc.to_f)
   trader.start_up()
   thread_exit = false
