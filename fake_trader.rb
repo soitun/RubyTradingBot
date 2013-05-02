@@ -36,7 +36,7 @@ class FakeTrader < Trader
     rand = rand(5) + 1.25
     #Begin Drafting a Sell
     btcAvailable = @wallets['bitcoin']
-    btcAvailable = (btcAvailable/rand).round(5)
+    btcAvailable = (btcAvailable/rand).round(8)
 
     price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
     puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
@@ -60,7 +60,7 @@ class FakeTrader < Trader
     #usdAvailable > min_usd &&
     puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
     if(usdAvailable > min_usd && price < (@last_price['sell']-(0.01*@last_price['sell'])))
-      amount = (usdAvailable/price).round(5)
+      amount = (usdAvailable/price).round(8)
       do_trade('buy',amount,price)
       puts 'Executing buy of '+'%.8f'%amount+' for $'+'%.2f'%price+'. Total of '+'%.2f'%(price*amount)
       @last_price['buy'] = price
