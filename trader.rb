@@ -10,7 +10,6 @@ class Trader
     @last_price['buy'] = 0
     @last_price['sell'] = 0
     @total_wealth = 0
-    @loop_count = 0
     read_settings()
   end
 
@@ -69,51 +68,42 @@ class Trader
 
   def run
     min_btc = 1000000
-    min_usd =
+    min_usd = 0.5
     @client.get_prices()
-    #@client.update_wallet_info()
+    @client.update_wallet_info()
 
-    rand = rand(10) + 1
+    percent_changed_ask = (@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
+    percent_changed_bid = (@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
+
     #Begin Drafting a Sell
-    btcAvailable = @client.wallets['bitcoin']
-    btcAvailable = btcAvailable/rand
+    amount = 0.05*percent_changed_ask
+    price = @client.ticker['bid']
 
-    price = (@client.ticker['ask'] > @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+    amount = 0 if @client.wallets['bitcoin'] < amount
 
-    #btcAvailable > min_btc &&
+    #amount > min_btc &&
     puts @client.ticker
-    puts 'Price = '+convert_int('price',price).to_s+'. Buy price(plus 1%) = '+(convert_int('price',@last_price['buy'])*1.01).to_s
-    if(price > (@last_price['buy']*1.01))
-      #@client.do_trade('ask',btcAvailable,price)
-      puts 'Executing sell of '+'%.8f' % convert_int('amount',btcAvailable)+'for $'+convert_int('price',price).to_s
+    puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
+    if(amount>0.05)
+      #@client.do_trade('ask',amount,price)
+      puts 'Executing sell of '+'%.8f' % amount+'for $'+price.to_s
       @last_price['sell'] = price
       save_state()
     end
 
-
-    rand = rand(10) + 1
     #Begin Drafting a Buy
-    usdAvailable = @client.wallets['usd']
-    usdAvailable = usdAvailable/rand
+    amount = 0.05*percent_changed_bid
+    price = @client.ticker['ask']
 
-    price = (@client.ticker['ask'] < @client.ticker['bid'])?@client.ticker['ask']:@client.ticker['bid']
+    amount = 0 if @client.wallets['usd']<amount*price
 
-    #usdAvailable > min_usd &&
-    puts 'Price = '+convert_int('price',price).to_s+'. Sell price(minus 1%) = '+(convert_int('price',@last_price['sell'])-(0.01*convert_int('price',@last_price['sell']))).to_s
-    if(price < (@last_price['sell']-(0.01*@last_price['sell'])))
-      #@client.do_trade('ask',usdAvailable,price)
-      puts 'Executing buy of '+'%.8f' % convert_int('amount',usdAvailable)+'for $'+convert_int('price',price).to_s
+    puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
+    if(amount>0.05)
+      #@client.do_trade('bid',amount,price)
+      puts 'Executing buy of '+'%.8f' % amount+'for $'+price.to_s
       @last_price['buy'] = price
       save_state()
     end
-
-    if @loop_count == 120
-      @loop_count = 0
-      @last_price['buy'] = @client.ticker['bid']
-      @last_price['sell'] = @client.ticker['ask']
-      puts 'Not enough trading. Resetting prices'
-    end
-
 
   end
 
@@ -126,9 +116,9 @@ class Trader
   end
 
   def total_value
-    float_amt = convert_int('amount',@client.wallets['bitcoin'])
-    float_price = convert_int('price',@client.ticker['ask'])
-    @total_wealth = convert_int('price',@client.wallets['usd'])+(float_amt*float_price)
+    float_amt = @client.wallets['bitcoin']
+    float_price = @client.ticker['ask']
+    @total_wealth = @client.wallets['usd']+(float_amt*float_price)
     return @total_wealth
   end
 
@@ -173,7 +163,7 @@ if __FILE__ == $0
         Thread.current.exit()
       end
       trader.run()
-      sleep 10
+      sleep 45
     end
   }
   input = ''

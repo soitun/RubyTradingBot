@@ -26,8 +26,8 @@ class MtGoxClient < GenericClient
       puts 'Could not get ticker data'
       return nil
     end
-    @ticker['bid'] = ticker['data']['buy']['value'].to_f
-    @ticker['ask'] = ticker['data']['sell']['value'].to_f
+    @ticker['bid'] = ticker['data']['buy']['value'].to_f  #highest price someone is buying for
+    @ticker['ask'] = ticker['data']['sell']['value'].to_f #lowest price someone is selling for
   end
 
   def update_wallet_info
@@ -85,6 +85,7 @@ class MtGoxClient < GenericClient
     header['Rest-Key'] = @key
     header['Rest-Sign'] = sign
     oid = JSON.parse(send_data(uri,header,data))
+    puts oid
   end
 
 
@@ -115,6 +116,7 @@ if __FILE__ == $0
   #sign = client.do_encrypt(data_string)
   #sign.gsub!("\n",'')
   #puts sign
-  puts client.wallets
+  client.get_prices()
+  puts client.ticker
 
 end
