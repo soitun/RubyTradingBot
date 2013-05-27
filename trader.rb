@@ -67,10 +67,21 @@ class Trader
   end
 
   def run
-    min_btc = 1000000
-    min_usd = 0.5
     @client.get_prices()
     @client.update_wallet_info()
+    @client.get_orders()
+
+    hasbuy = false
+    hassell = false
+
+    @client.orders.each { |x|
+      if(x['type']==ask)
+        hassell = true
+      end
+      if(x['type']==bid)
+        hasbuy = true
+      end
+    }
 
     percent_changed_ask = (@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
     percent_changed_bid = (@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
@@ -84,7 +95,7 @@ class Trader
     #amount > min_btc &&
     puts @client.ticker
     puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
-    if(amount>0.05)
+    if(amount>0.05 && !hassell)
       #@client.do_trade('ask',amount,price)
       puts 'Executing sell of '+'%.8f' % amount+'for $'+price.to_s
       @last_price['sell'] = price
@@ -98,7 +109,7 @@ class Trader
     amount = 0 if @client.wallets['usd']<amount*price
 
     puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
-    if(amount>0.05)
+    if(amount>0.05 && !hasbuy)
       #@client.do_trade('bid',amount,price)
       puts 'Executing buy of '+'%.8f' % amount+'for $'+price.to_s
       @last_price['buy'] = price

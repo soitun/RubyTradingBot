@@ -117,6 +117,8 @@ if __FILE__ == $0
   #sign.gsub!("\n",'')
   #puts sign
   client.get_prices()
+  client.get_orders()
+  puts client.orders
   puts client.ticker
 
 end
