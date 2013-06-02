@@ -1,6 +1,8 @@
 require_relative 'camp_bx_client'
 require_relative 'mt_gox_client'
+require 'xmpp4r-simple'
 require 'psych'
+
 
 class Trader
 
@@ -10,6 +12,7 @@ class Trader
     @last_price['buy'] = 0
     @last_price['sell'] = 0
     @total_wealth = 0
+    @useim = false
     read_settings()
   end
 
@@ -22,6 +25,16 @@ class Trader
         @client = CampBXClient.new(settings['user'],settings['pass'])
       else
         abort('Bad settings file. Please delete and do the setup')
+    end
+
+    if(settings['useim'] == 'true')
+      @useim = true
+      puts 'connecting...'
+      @im = Jabber::Simple.new(settings['imuser'],settings['impass'])
+      puts 'Connected!'
+      @alertee = settings['imalertee'].to_s
+    else
+      puts 'Not using IM'
     end
 
     puts 'Settings loaded.'
@@ -71,17 +84,20 @@ class Trader
     @client.update_wallet_info()
     @client.get_orders()
 
+    puts 'Trades: '+@client.orders.to_s
+
     hasbuy = false
     hassell = false
 
     @client.orders.each { |x|
-      if(x['type']==ask)
+      if(x['type']=='ask')
         hassell = true
       end
-      if(x['type']==bid)
+      if(x['type']=='bid')
         hasbuy = true
       end
     }
+    puts 'Sell: '+hassell.to_s+' Buy: '+hasbuy.to_s
 
     percent_changed_ask = (@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
     percent_changed_bid = (@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
@@ -96,8 +112,9 @@ class Trader
     puts @client.ticker
     puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
     if(amount>0.05 && !hassell)
-      #@client.do_trade('ask',amount,price)
+      @client.do_trade('ask',amount,price)
       puts 'Executing sell of '+'%.8f' % amount+'for $'+price.to_s
+      @im.deliver(@alertee, 'Executing sell of '+'%.8f' % amount+'for $'+price.to_s) if @useim
       @last_price['sell'] = price
       save_state()
     end
@@ -110,8 +127,9 @@ class Trader
 
     puts 'Price = '+price.to_s+'. Sell price(minus 1%) = '+(@last_price['sell']-(0.01*@last_price['sell'])).to_s
     if(amount>0.05 && !hasbuy)
-      #@client.do_trade('bid',amount,price)
+      @client.do_trade('bid',amount,price)
       puts 'Executing buy of '+'%.8f' % amount+'for $'+price.to_s
+      @im.deliver(@alertee, 'Executing buy of '+'%.8f' % amount+'for $'+price.to_s) if @useim
       @last_price['buy'] = price
       save_state()
     end
@@ -157,6 +175,21 @@ if __FILE__ == $0
     else
       abort 'Invalid choice. Please rerun program.'
     end
+
+    puts 'Do you want to be alerted over XMPP? (y/n):'
+    choice = gets.chomp.downcase
+    if choice == 'y'
+      settings['useim'] = 'true'
+      puts 'Input username of bot:'
+      settings['imuser'] = gets.chomp
+      puts 'Input password for bot:'
+      settings['impass'] = gets.chomp
+      puts 'Lasly, input user to be alerted:'
+      settings['imalertee'] = gets.chomp
+    else
+      settings['useim'] = 'false'
+    end
+
 
     File.open('config.yaml','w') do |file|
       file.puts settings.to_yaml

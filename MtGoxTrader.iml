@@ -6,6 +6,8 @@
     <orderEntry type="jdk" jdkName="ruby-1.9.3-p194" jdkType="RUBY_SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" scope="PROVIDED" name="json (v1.7.7, ruby-1.9.3-p194) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="scashin133-xmpp4r-simple (v0.8.9, ruby-1.9.3-p194) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="xmpp4r (v0.5, ruby-1.9.3-p194) [gem]" level="application" />
   </component>
 </module>
 
