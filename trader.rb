@@ -136,6 +136,11 @@ class Trader
 
   end
 
+  def clean_up
+    @im.disconnect
+  end
+
+
   def convert_int(type, quantity)
     if(type=='price')
       return quantity.to_f/1.0e5
@@ -209,6 +214,7 @@ if __FILE__ == $0
       trader.run()
       sleep 45
     end
+    trader.clean_up()
   }
   input = ''
   while input != 'exit'
