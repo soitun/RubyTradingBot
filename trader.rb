@@ -17,7 +17,7 @@ class Trader
   end
 
   def read_settings
-    settings = Psych.load_file('config.yaml')
+    settings = Psych.load_file(File.dirname(__FILE__)+'/config.yaml')
     case settings['client']
       when 'mtgox' then
         @client = MtGoxClient.new(settings['key'],settings['secret'])
@@ -44,7 +44,7 @@ class Trader
     data = Hash.new()
     data['last_prices'] = @last_price
     data['total_wealth'] = total_value
-    File.open('backup.yaml','w') do |file|
+    File.open(File.dirname(__FILE__)+'/backup.yaml','w') do |file|
       file.puts data.to_yaml
     end
   end
@@ -55,7 +55,7 @@ class Trader
       return false
     end
 
-    data = Psych.load_file('backup.yaml')
+    data = Psych.load_file(File.dirname(__FILE__)+'/backup.yaml')
 
     @last_price['buy'] = data['last_prices']['buy'].to_f
     @last_price['sell'] = data['last_prices']['sell'].to_f
