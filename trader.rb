@@ -77,7 +77,7 @@ class Trader
     puts 'Wallet: ' + @client.wallets.to_s
     puts 'Ticker: ' + @client.ticker.to_s
     puts 'Total Value: $' + '%.8f' % total_value.to_s
-    puts "\n\n"
+    puts "\n"
   end
 
   def run
@@ -98,8 +98,8 @@ class Trader
     }
     puts 'Sell: '+hassell.to_s+' Buy: '+hasbuy.to_s
 
-    percent_changed_ask = -100*(@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
-    percent_changed_bid = -100*(@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
+    percent_changed_ask = (100*(@client.ticker['bid']-@last_price['buy'])/@last_price['buy']).round(2)
+    percent_changed_bid = (-100*(@client.ticker['ask']-@last_price['sell'])/@last_price['sell']).round(2)
 
     puts 'percent bid: '+percent_changed_bid.to_s+'%'
     puts 'percent ask: '+percent_changed_ask.to_s+'%'
@@ -111,7 +111,6 @@ class Trader
     amount = 0 if @client.wallets['bitcoin'] < amount
 
     #amount > min_btc &&
-    puts @client.ticker
     puts 'Price = '+price.to_s+'. Buy price(plus 1%) = '+(@last_price['buy']*1.01).to_s
     if(amount>0.05 && !hassell)
       @client.do_trade('ask',amount,price)
@@ -135,6 +134,8 @@ class Trader
       @last_price['buy'] = price
       save_state()
     end
+
+    puts "\n"
 
   end
 
