@@ -50,7 +50,7 @@ class Trader
   end
 
   def load_state
-    if !File.exist? 'backup.yaml'
+    if !File.exist? File.dirname(__FILE__)+'/backup.yaml'
       puts 'No backup to load.'
       return false
     end
@@ -77,14 +77,13 @@ class Trader
     puts 'Wallet: ' + @client.wallets.to_s
     puts 'Ticker: ' + @client.ticker.to_s
     puts 'Total Value: $' + '%.8f' % total_value.to_s
+    puts "\n\n"
   end
 
   def run
     @client.get_prices()
     @client.update_wallet_info()
     @client.get_orders()
-
-    puts 'Trades: '+@client.orders.to_s
 
     hasbuy = false
     hassell = false
@@ -99,8 +98,11 @@ class Trader
     }
     puts 'Sell: '+hassell.to_s+' Buy: '+hasbuy.to_s
 
-    percent_changed_ask = (@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
-    percent_changed_bid = (@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
+    percent_changed_ask = -100*(@client.ticker['bid']-@last_price['buy'])/@last_price['buy']
+    percent_changed_bid = -100*(@client.ticker['ask']-@last_price['sell'])/@last_price['sell']
+
+    puts 'percent bid: '+percent_changed_bid.to_s+'%'
+    puts 'percent ask: '+percent_changed_ask.to_s+'%'
 
     #Begin Drafting a Sell
     amount = 0.05*percent_changed_ask
@@ -160,7 +162,7 @@ end
 
 if __FILE__ == $0
 
-  if !File.exist? 'config.yaml'
+  if !File.exist? File.dirname(__FILE__)+'/config.yaml'
     puts "First Run Detected\nPlease answer the following setup questions."
     puts "\nWhich Bitcoin exchange do you use?\n1. Mt. Gox\n2. CampBX"
     settings = Hash.new
